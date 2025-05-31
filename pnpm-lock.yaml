@@ -5,9 +5,15 @@ settings:
   excludeLinksFromLockfile: false
 
 dependencies:
+  '@huggingface/inference':
+    specifier: ^3.15.0
+    version: 3.15.0
   '@huggingface/transformers':
     specifier: ^3.5.1
     version: 3.5.1
+  '@pinecone-database/pinecone':
+    specifier: ^6.0.1
+    version: 6.0.1
   next:
     specifier: 15.3.2
     version: 15.3.2(react-dom@19.1.0)(react@19.1.0)
@@ -162,9 +168,26 @@ packages:
       levn: 0.4.1
     dev: true
 
+  /@huggingface/inference@3.15.0:
+    resolution: {integrity: sha512-C+Adt4fu4ztlq0Al9EOgEdK5Hl8ebV1eoDEWegJPdAJ97U8A1aqBbl1Sp4S4+wIy3nLApTrtcLuoizGZmLtDMA==}
+    engines: {node: '>=18'}
+    dependencies:
+      '@huggingface/jinja': 0.5.0
+      '@huggingface/tasks': 0.19.11
+    dev: false
+
   /@huggingface/jinja@0.4.1:
     resolution: {integrity: sha512-3WXbMFaPkk03LRCM0z0sylmn8ddDm4ubjU7X+Hg4M2GOuMklwoGAFXp9V2keq7vltoB/c7McE5aHUVVddAewsw==}
     engines: {node: '>=18'}
+    dev: false
+
+  /@huggingface/jinja@0.5.0:
+    resolution: {integrity: sha512-Ptc03/jGRiYRoi0bUYKZ14MkDslsBRT24oxmsvUlfYrvQMldrxCevhPnT+hfX8awKTT8/f/0ZBBWldoeAcMHdQ==}
+    engines: {node: '>=18'}
+    dev: false
+
+  /@huggingface/tasks@0.19.11:
+    resolution: {integrity: sha512-oBhSgVlg7Pp643MsH8BiI3OAXIMJNxdSiMtv4mApRZV8dmAz8oasKhg6CVKIplO7vAO7F6dkmMn4bYM64I2A9w==}
     dev: false
 
   /@huggingface/transformers@3.5.1:
@@ -554,6 +577,11 @@ packages:
     resolution: {integrity: sha512-nn5ozdjYQpUCZlWGuxcJY/KpxkWQs4DcbMCmKojjyrYDEAGy4Ce19NN4v5MduafTwJlbKc99UA8YhSVqq9yPZA==}
     engines: {node: '>=12.4.0'}
     dev: true
+
+  /@pinecone-database/pinecone@6.0.1:
+    resolution: {integrity: sha512-vCurixSZA7TRhPvLN9EL3k1HNHQ4ZY+A8zEAJrjgyW+IHaV7HLtCqRm0EHuauyhf/NNIiJG69r7hZYLsWOqACA==}
+    engines: {node: '>=18.0.0'}
+    dev: false
 
   /@protobufjs/aspromise@1.1.2:
     resolution: {integrity: sha512-j+gKExEuLmKwvz3OgROXtrJ2UG2x8Ch2YZUxahh+s1F2HZ+wAceUNLkvy6zKCPVRkU++ZWQrdxsUeQXmcg4uoQ==}
