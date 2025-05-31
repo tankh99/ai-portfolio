@@ -1,103 +1,133 @@
-import Image from "next/image";
+'use client'
+
+import React, { useState, useEffect, useRef } from "react"; // Added React and useRef
+
+interface Message {
+  id: string;
+  text: string;
+  sender: 'user' | 'bot';
+}
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [inputValue, setInputValue] = useState(""); // For the controlled input
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const messagesEndRef = useRef<null | HTMLDivElement>(null); // For auto-scrolling
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(scrollToBottom, [messages]); // Scroll when messages change
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const userQuestion = inputValue.trim();
+
+    if (!userQuestion) {
+      setError("Please enter a question.");
+      return;
+    }
+
+    // Add user's question to messages
+    setMessages(prevMessages => [...prevMessages, { id: Date.now().toString(), text: userQuestion, sender: 'user' }]);
+    setInputValue(""); // Clear input field
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const response = await fetch('/api/rag', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ question: userQuestion }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `API Error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      // Add bot's answer to messages
+      setMessages(prevMessages => [...prevMessages, { id: (Date.now() + 1).toString(), text: data.answer, sender: 'bot' }]);
+
+    } catch (err: any) {
+      console.error("RAG Error:", err);
+      setError(err.message || "Failed to get an answer.");
+      // Optionally add error as a bot message
+      setMessages(prevMessages => [...prevMessages, { id: (Date.now() + 1).toString(), text: `Error: ${err.message || "Failed to get an answer."}`, sender: 'bot' }]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-screen p-4 font-[family-name:var(--font-geist-sans)] bg-gradient-to-br from-neutral-900 via-neutral-800 to-black text-neutral-100">
+      {/* Chat messages area */}
+      <div className="flex-grow overflow-y-auto mb-4 space-y-4 p-2 rounded-lg bg-neutral-800/30 border border-neutral-700">
+        {messages.map((msg) => (
+          <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+            <div
+              className={`max-w-xs lg:max-w-md px-4 py-2 rounded-xl shadow ${
+                msg.sender === 'user'
+                  ? 'bg-sky-600 text-white'
+                  : 'bg-neutral-700 text-neutral-100'
+              }`}
+            >
+              <p className="whitespace-pre-wrap">{msg.text}</p>
+            </div>
+          </div>
+        ))}
+        {isLoading && (
+          <div className="flex justify-start">
+            <div className="max-w-xs lg:max-w-md px-4 py-2 rounded-xl shadow bg-neutral-700 text-neutral-100">
+              <p className="animate-pulse">Thinking...</p>
+            </div>
+          </div>
+        )}
+        <div ref={messagesEndRef} /> {/* Anchor for scrolling */}
+      </div>
+
+      {/* Error display */}
+      {error && !isLoading && ( // Only show error if not loading new response
+        <div className="mb-4 p-3 w-full max-w-md self-center bg-red-700/30 border border-red-500 rounded-lg">
+          <p className="text-red-300 text-sm">{error}</p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+      )}
+
+      {/* Input form */}
+      <form onSubmit={handleSubmit} className="w-full flex gap-x-2 max-w-xl self-center sticky bottom-4">
+        <input
+          name="question" // Still useful for FormData if you ever revert, though we use controlled input now
+          type="text"
+          value={inputValue}
+          onChange={(e) => {
+            setInputValue(e.target.value);
+            if (error) setError(""); // Clear error when user starts typing
+          }}
+          className="flex-grow bg-neutral-700 p-4 rounded-full text-neutral-100 placeholder-neutral-400 border border-neutral-600 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none transition-shadow duration-150"
+          placeholder="Ask anything about my resume"
+          disabled={isLoading}
+        />
+        <button
+          className="cursor-pointer
+                     bg-gradient-to-r from-sky-600 via-sky-500 to-sky-600
+                     text-white font-semibold
+                     py-3 px-6 rounded-full shadow-md
+                     hover:from-sky-500 hover:via-sky-400 hover:to-sky-500
+                     active:from-sky-700 active:via-sky-600 active:to-sky-700
+                     focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black focus:ring-white
+                     transition-all duration-150 ease-in-out
+                     disabled:opacity-70 disabled:cursor-not-allowed"
+          type="submit"
+          disabled={isLoading}
         >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+          {isLoading ? "..." : "Send"}
+        </button>
+      </form>
     </div>
   );
 }
