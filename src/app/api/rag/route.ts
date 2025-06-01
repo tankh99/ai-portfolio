@@ -15,21 +15,48 @@ const PINECONE_NAMESPACE = process.env.PINECONE_NAMESPACE || 'default'; // Your 
 
 
 async function generateAnswer(question: string, context: string) {
-    const prompt = `Context:\n${context}\n\nQuestion: ${question}\n\nAnswer:`;
-    try {
+    const systemPrompt = "You are Khang Hou's helpful and highly skilled AI assistant, specializing in his resume and portfolio. Your goal is to answer questions based *only* on the provided context. If the answer is not found in the context, clearly state that the information is not available in the provided documents. Be concise and professional.";
+    
+    const userMessage = `Based on the following context, please answer the question.
 
+Context:
+---
+${context}
+---
+
+Question: ${question}`;
+
+    try {
         const client = new InferenceClient(process.env.HUGGINGFACE_ACCESS_TOKEN)
-        const response = await client.questionAnswering({
-            provider: "hf-inference",
-            model: "deepset/roberta-base-squad2",
-            inputs: {
-                question: question,
-                context: context,
-            },
-        })
-        return response.answer;
+        const response = await client.chatCompletion({
+            model: "meta-llama/Llama-3.1-8B-Instruct",
+            provider: "auto",
+            messages: [
+                {
+                    role: "system",
+                    content: systemPrompt
+                },
+                {
+                    role: "user",
+                    content: userMessage
+                }
+            ],
+            parameters: {
+                max_new_tokens: 512, 
+                temperature: 0.7,    
+            }
+        });
+        
+        if (response.choices && Array.isArray(response.choices) && response.choices.length > 0 && 
+            response.choices[0].message && typeof response.choices[0].message.content === 'string') {
+            return response.choices[0].message.content.trim();
+        } else {
+            console.error("Unexpected response structure from chatCompletion:", response);
+            throw new Error("Invalid response structure from chatCompletion");
+        }
+
     } catch (error) {
-        console.error("Error generating answer from @huggingface/inference:", error);
+        console.error("Error generating answer from @huggingface/inference (chatCompletion):", error);
         throw new Error(`Failed to generate answer: ${error instanceof Error ? error.message : String(error)}`);
     }
 
@@ -53,11 +80,12 @@ export async function POST(request: Request) {
             }
         })
 
+        
         const context = queryResponse.result.hits
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             .map((hit: any) => hit.fields["content"] as string)
+            .join("\n---\n"); // Join context snippets clearly
 
-        const answer = await generateAnswer(question, context.join("\n"));
+        const answer = await generateAnswer(question, context);
         return NextResponse.json({answer: answer})
     } catch (error: any) {
         console.error('[RAG API Error]', error);
