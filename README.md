@@ -3,9 +3,7 @@
 <!-- HEADER STYLE: CLASSIC -->
 <div align="center">
 
-<img src="readmeai/assets/logos/purple.svg" width="30%" style="position: relative; top: 0; right: 0;" alt="Project Logo"/>
-
-# AI-PORTFOLIO
+# AI PORTFOLIO
 
 <em>Elevate your career with AI-driven insights.</em>
 
@@ -27,20 +25,22 @@
 
 ## Table of Contents
 
-- [Table of Contents](#table-of-contents)
-- [Overview](#overview)
-- [Features](#features)
-- [Project Structure](#project-structure)
-    - [Project Index](#project-index)
-- [Getting Started](#getting-started)
-    - [Prerequisites](#prerequisites)
-    - [Installation](#installation)
-    - [Usage](#usage)
-    - [Testing](#testing)
-- [Roadmap](#roadmap)
-- [Contributing](#contributing)
-- [License](#license)
-- [Acknowledgments](#acknowledgments)
+- [AI PORTFOLIO](#ai-portfolio)
+	- [Table of Contents](#table-of-contents)
+	- [Overview](#overview)
+	- [Features](#features)
+		- [Explanation of the Table Components:](#explanation-of-the-table-components)
+	- [Project Structure](#project-structure)
+		- [Project Index](#project-index)
+	- [Getting Started](#getting-started)
+		- [Prerequisites](#prerequisites)
+		- [Installation](#installation)
+		- [Usage](#usage)
+		- [Testing](#testing)
+	- [Roadmap](#roadmap)
+	- [Contributing](#contributing)
+	- [License](#license)
+	- [Acknowledgments](#acknowledgments)
 
 ---
 
@@ -74,7 +74,6 @@ This project simplifies the integration of AI functionalities into web applicati
 | 🛡️ | **Security**      | <ul><li>Environment variables for sensitive data</li><li>Secure API calls to Hugging Face</li></ul> |
 | 📦 | **Dependencies**  | <ul><li>TypeScript, React, Next.js</li><li>Tailwind CSS for styling</li><li>Hugging Face libraries for AI</li></ul> |
 | 🚀 | **Scalability**   | <ul><li>Next.js for scalable web applications</li><li>Pinecone for scalable vector storage</li></ul> |
-```
 
 ### Explanation of the Table Components:
 - **Architecture**: Highlights the use of Next.js and React, emphasizing the benefits of server-side rendering and type safety.
@@ -132,7 +131,7 @@ This project simplifies the integration of AI functionalities into web applicati
 			</thead>
 				<tr style='border-bottom: 1px solid #eee;'>
 					<td style='padding: 8px;'><b><a href='https://github.com/tankh99/ai-portfolio/blob/master/pnpm-lock.yaml'>pnpm-lock.yaml</a></b></td>
-					<td style='padding: 8px;'>- Project SummaryThe <code>pnpm-lock.yaml</code> file is a crucial component of the project's dependency management system<br>- It serves to lock the versions of the project's dependencies, ensuring that the same versions are used consistently across different environments<br>- This file specifically manages dependencies related to machine learning and database functionalities, including libraries from Hugging Face for inference and transformers, as well as Pinecone for database interactions.By maintaining a stable and predictable set of dependencies, the <code>pnpm-lock.yaml</code> file enhances the reliability of the entire codebase architecture<br>- It allows developers to collaborate effectively without the risk of version conflicts, ultimately contributing to a smoother development process and a more robust application.</td>
+					<td style='padding: 8px;'>- The <code>pnpm-lock.yaml</code> file is a crucial component of the project's dependency management system<br>- It serves to lock the versions of the project's dependencies, ensuring that the same versions are used consistently across different environments<br>- This file specifically manages dependencies related to machine learning and database functionalities, including libraries from Hugging Face for inference and transformers, as well as Pinecone for database interactions.By maintaining a stable and predictable set of dependencies, the <code>pnpm-lock.yaml</code> file enhances the reliability of the entire codebase architecture<br>- It allows developers to collaborate effectively without the risk of version conflicts, ultimately contributing to a smoother development process and a more robust application.</td>
 				</tr>
 				<tr style='border-bottom: 1px solid #eee;'>
 					<td style='padding: 8px;'><b><a href='https://github.com/tankh99/ai-portfolio/blob/master/postcss.config.mjs'>postcss.config.mjs</a></b></td>
@@ -310,9 +309,8 @@ npm test
 
 ## Roadmap
 
-- [X] **`Task 1`**: <strike>Implement feature one.</strike>
-- [ ] **`Task 2`**: Implement feature two.
-- [ ] **`Task 3`**: Implement feature three.
+- [X] **`Task 1`**: <strike>Implement basic document vectorisation and RAG capabilities.</strike>
+- [ ] **`Task 2`**: Improve information & retrieval such that it is able to give accurate details on projects, resume and linkedIn information
 
 ---
 
