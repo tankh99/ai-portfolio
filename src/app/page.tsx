@@ -11,7 +11,13 @@ interface Message {
 
 export default function Home() {
   const [inputValue, setInputValue] = useState(""); // For the controlled input
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: "1",
+      "sender": "bot",
+      "text": "Hello! I'm Khang Hou's AI assistant. Ask me anything about his resume, projects or even hobbies!",
+    }
+  ]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const messagesEndRef = useRef<null | HTMLDivElement>(null); // For auto-scrolling

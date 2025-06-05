@@ -13,6 +13,53 @@ const pinecone = new Pinecone({
 const PINECONE_INDEX_NAME = process.env.PINECONE_INDEX_NAME || 'ai-portfolio'; // Replace or use env var
 const PINECONE_NAMESPACE = process.env.PINECONE_NAMESPACE || 'default'; // Your single namespace
 
+/**
+ * Uses a smaller LLM to decide which namespace to query pineconeDB
+ */
+async function getRoutedNamespace(question: string) {
+    const systemPrompt = `You are an intelligent routing assistant. Your task is to determine the most relevant knowledge domain for the user's question.
+            Available domains and their descriptions:
+            - 'github': For questions specifically about greater details of Khang's GitHub projects and URLs .
+            - 'resume': For questions about Khang Hou's professional experience, skills, projects, qualifications, leadership/volunteering experience listed in a resume or portfolio.
+            - 'linkedin-data': For questions about Khang's LinkedIn profile, experience, skills, projects, qualifications, leadership/volunteering experience.
+            - '_default_': For all other general questions.
+
+            User Question: ${question}
+
+            Based on the user's question, which domain is most appropriate? Respond with only the domain name (e.g., 'commit-history').`;
+
+    const userMessage = `Based on the following question, please decide which namespace to query pineconeDB.
+
+Question: ${question}`;
+    
+    const client = new InferenceClient(process.env.HUGGINGFACE_ACCESS_TOKEN)
+    const response = await client.chatCompletion({
+        model: "meta-llama/Llama-3.1-8B-Instruct",
+        provider: "auto",
+        messages: [
+            {
+                role: "system",
+                content: systemPrompt
+            },
+            {
+                role: "user",
+                content: userMessage
+            }
+
+        ]
+    });
+
+    const knownNamespaces = ['github', 'resume', 'linkedin-data', '_default_'];
+
+    if (response.choices && response.choices[0].message && response.choices[0].message.content) {
+        const chosenNamespace = response.choices[0].message.content.trim();
+        if (knownNamespaces.includes(chosenNamespace)) {
+            return chosenNamespace;
+        }
+        console.warn(`Router LLM returned an unknown namespace: ${chosenNamespace}. Falling back to default.`);
+    }
+    return '_default_';
+}
 
 async function generateAnswer(question: string, context: string) {
     const systemPrompt = "You are Khang Hou's helpful and highly skilled AI assistant, specializing in his resume and portfolio. Your goal is to answer questions based *only* on the provided context. If the answer is not found in the context, clearly state that the information is not available in the provided documents. Be concise and professional.";
@@ -71,7 +118,9 @@ export async function POST(request: Request) {
         }
 
         const index = pinecone.index(PINECONE_INDEX_NAME);
-        const queryResponse = await index.namespace(PINECONE_NAMESPACE).searchRecords({
+        const namespace = await getRoutedNamespace(question);
+        console.log(`Routing to namespace: ${namespace}`);
+        const queryResponse = await index.namespace(namespace).searchRecords({
             query: {
                 inputs: {
                     text: question, 
