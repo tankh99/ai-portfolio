@@ -2,11 +2,19 @@
 
 import React, { useState, useEffect, useRef } from "react"; // Added React and useRef
 import Navbar from "../components/Navbar"; // Import the Navbar component
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import type { Components } from 'react-markdown';
 
 interface Message {
   id: string;
   text: string;
   sender: 'user' | 'bot';
+}
+
+interface CodeProps {
+  inline?: boolean;
+  children: React.ReactNode;
 }
 
 export default function Home() {
@@ -92,7 +100,54 @@ export default function Home() {
                     : 'bg-neutral-700 text-neutral-100'
                 }`}
               >
-                <p className="whitespace-pre-wrap">{msg.text}</p>
+                {msg.sender === 'user' ? (
+                  <p className="whitespace-pre-wrap">{msg.text}</p>
+                ) : (
+                  <div className="prose prose-invert prose-sm max-w-none">
+                    <ReactMarkdown 
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        a: ({href, children}) => (
+                          <a href={href} className="text-sky-400 hover:text-sky-300 underline">
+                            {children}
+                          </a>
+                        ),
+                        code: ({node, className, children, ...props}) => (
+                          <code className="block bg-neutral-800 rounded p-2 my-2 overflow-x-auto" {...props}>
+                            {children}
+                          </code>
+                        ),
+                        blockquote: ({children}) => (
+                          <blockquote className="border-l-4 border-neutral-500 pl-4 my-2 italic">
+                            {children}
+                          </blockquote>
+                        ),
+                        p: ({children}) => (
+                          <p className="whitespace-pre-line">
+                            {children}
+                          </p>
+                        ),
+                        ul: ({children}) => (
+                          <ul className="list-disc list-inside my-2 space-y-1">
+                            {children}
+                          </ul>
+                        ),
+                        ol: ({children}) => (
+                          <ol className="list-decimal list-inside my-2 space-y-1">
+                            {children}
+                          </ol>
+                        ),
+                        li: ({children}) => (
+                          <li className="ml-4">
+                            {children}
+                          </li>
+                        ),
+                      }}
+                    >
+                      {msg.text.replace(/\n/g, '\n')}
+                    </ReactMarkdown>
+                  </div>
+                )}
               </div>
             </div>
           ))}

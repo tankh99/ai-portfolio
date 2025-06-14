@@ -11,7 +11,7 @@ const pinecone = new Pinecone({
 });
 
 const PINECONE_INDEX_NAME = process.env.PINECONE_INDEX_NAME || 'ai-portfolio'; // Replace or use env var
-const PINECONE_NAMESPACE = process.env.PINECONE_NAMESPACE || 'default'; // Your single namespace
+const PINECONE_NAMESPACE = process.env.PINECONE_NAMESPACE || 'resume'; // Your single namespace
 
 /**
  * Uses a smaller LLM to decide which namespace to query pineconeDB
@@ -118,7 +118,8 @@ export async function POST(request: Request) {
         }
 
         const index = pinecone.index(PINECONE_INDEX_NAME);
-        const namespace = await getRoutedNamespace(question);
+        // const namespace = await getRoutedNamespace(question);
+        const namespace = PINECONE_NAMESPACE
         console.log(`Routing to namespace: ${namespace}`);
         const queryResponse = await index.namespace(namespace).searchRecords({
             query: {
