@@ -115,9 +115,67 @@ Question: ${question}`;
 
 }
 
+async function generateStreamingAnswer(question: string, context: string, controller: ReadableStreamDefaultController<Uint8Array>) {
+    const systemPrompt = `
+    You are Khang Hou's helpful and highly skilled AI assistant, specializing in his resume and portfolio. 
+    Your goal is to answer questions based *only* on the provided context. 
+    If the answer is not found in the context, clearly state that the information is not available in the provided documents. 
+    Be concise and conversational and also provide follow-up suggestions on other topics that may interest the user's needs. 
+    
+    For example, if the user asks for my resume and projects, he/she may be a recruiter and may be interested in knowing more of my skills, experiences and projects.`;
+    
+    const userMessage = `Based on the following context, please answer the question.
+
+Context:
+---
+${context}
+---
+
+Question: ${question}`;
+
+    try {
+        const client = new InferenceClient(process.env.HUGGINGFACE_ACCESS_TOKEN)
+        const stream = client.chatCompletionStream({
+            model: "meta-llama/Llama-3.1-8B-Instruct",
+            provider: "auto",
+            messages: [
+                {
+                    role: "system",
+                    content: systemPrompt
+                },
+                {
+                    role: "user",
+                    content: userMessage
+                }
+            ],
+            stream: true,
+            parameters: {
+                max_new_tokens: 512, 
+                temperature: 0.7,
+            }
+        });
+        
+
+        for await (const r of stream) {
+            // yield the generated token
+            const encoder = new TextEncoder();
+            const chunk = encoder.encode(`data: ${r.choices[0].delta.content}\n\n`);
+            controller.enqueue(chunk)
+        }
+
+    } catch (error) {
+        console.error("Error generating streaming answer from @huggingface/inference (chatCompletion):", error);
+        const encoder = new TextEncoder();
+        const errorChunk = encoder.encode(`data: ${JSON.stringify({ error: `Failed to generate answer: ${error instanceof Error ? error.message : String(error)}` })}\n\n`);
+        controller.enqueue(errorChunk);
+    } finally {
+        controller.close();
+    }
+}
+
 export async function POST(request: Request) {
     try {
-        const {question} = await request.json();
+        const {question, stream: shouldStream = false} = await request.json();
 
         if (!question || typeof question !== 'string') {
             return NextResponse.json({ error: 'Question is required and must be a string.' }, { status: 400 });
@@ -141,8 +199,26 @@ export async function POST(request: Request) {
             .map((hit: any) => hit.fields["content"] as string)
             .join("\n---\n"); // Join context snippets clearly
 
-        const answer = await generateAnswer(question, context);
-        return NextResponse.json({answer: answer})
+        // Check if streaming is requested
+        if (shouldStream) {
+            const stream = new ReadableStream({
+                start(controller) {
+                    generateStreamingAnswer(question, context, controller);
+                }
+            });
+
+            return new Response(stream, {
+                headers: {
+                    'Content-Type': 'text/event-stream',
+                    'Cache-Control': 'no-cache',
+                    'Connection': 'keep-alive',
+                },
+            });
+        } else {
+            // Regular non-streaming response
+            const answer = await generateAnswer(question, context);
+            return NextResponse.json({answer: answer})
+        }
     } catch (error: any) {
         console.error('[RAG API Error]', error);
         return NextResponse.json({ error: error.message || 'An unexpected error occurred.' }, { status: 500 });

@@ -28,6 +28,7 @@ export default function Home() {
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [isStreaming, setIsStreaming] = useState(false);
   const messagesEndRef = useRef<null | HTMLDivElement>(null); // For auto-scrolling
 
   const scrollToBottom = () => {
@@ -52,12 +53,13 @@ export default function Home() {
     setError("");
 
     try {
+      // Try streaming first, fallback to regular if not supported
       const response = await fetch('/api/rag', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ question: userQuestion }),
+        body: JSON.stringify({ question: userQuestion, stream: true }),
       });
 
       if (!response.ok) {
@@ -65,9 +67,61 @@ export default function Home() {
         throw new Error(errorData.error || `API Error: ${response.status}`);
       }
 
-      const data = await response.json();
-      // Add bot's answer to messages
-      setMessages(prevMessages => [...prevMessages, { id: (Date.now() + 1).toString(), text: data.answer, sender: 'bot' }]);
+      // Check if response is streaming
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('text/event-stream')) {
+        // Handle streaming response
+        setIsStreaming(true);
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
+        
+        if (!reader) {
+          throw new Error("No response body reader available");
+        }
+
+        // Add initial bot message
+        const botMessageId = (Date.now() + 1).toString();
+        setMessages(prevMessages => [...prevMessages, { id: botMessageId, text: "", sender: 'bot' }]);
+
+        let accumulatedText = "";
+        
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n');
+            
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                try {
+                  const data = (line.slice(6));
+                  
+                  accumulatedText += data;
+                  // Update the bot message with accumulated text
+                  setMessages(prevMessages => 
+                    prevMessages.map(msg => 
+                      msg.id === botMessageId 
+                        ? { ...msg, text: accumulatedText }
+                        : msg
+                    )
+                  );
+                } catch (parseError) {
+                  console.warn('Failed to parse streaming data:', parseError);
+                }
+              }
+            }
+          }
+        } finally {
+          reader.releaseLock();
+          setIsStreaming(false);
+        }
+      } else {
+        // Handle regular JSON response
+        const data = await response.json();
+        setMessages(prevMessages => [...prevMessages, { id: (Date.now() + 1).toString(), text: data.answer, sender: 'bot' }]);
+      }
 
     } catch (err: any) {
       console.error("RAG Error:", err);
@@ -76,6 +130,7 @@ export default function Home() {
       setMessages(prevMessages => [...prevMessages, { id: (Date.now() + 1).toString(), text: `Error: ${err.message || "Failed to get an answer."}`, sender: 'bot' }]);
     } finally {
       setIsLoading(false);
+      setIsStreaming(false);
     }
   };
 
@@ -151,10 +206,12 @@ export default function Home() {
               </div>
             </div>
           ))}
-          {isLoading && (
+          {(isLoading || isStreaming) && (
             <div className="flex justify-start">
               <div className="max-w-xs lg:max-w-md px-4 py-2 rounded-xl shadow bg-neutral-700 text-neutral-100">
-                <p className="animate-pulse">Thinking...</p>
+                <p className="animate-pulse">
+                  {isStreaming ? "Streaming..." : "Thinking..."}
+                </p>
               </div>
             </div>
           )}
@@ -162,7 +219,7 @@ export default function Home() {
         </div>
 
         {/* Error display */}
-        {error && !isLoading && ( // Only show error if not loading new response
+        {error && !isLoading && !isStreaming && ( // Only show error if not loading new response
           <div className="mb-4 p-3 w-full max-w-md self-center bg-red-700/30 border border-red-500 rounded-lg">
             <p className="text-red-300 text-sm">{error}</p>
           </div>
@@ -180,7 +237,7 @@ export default function Home() {
             }}
             className="flex-grow bg-neutral-700 p-4 rounded-full text-neutral-100 placeholder-neutral-400 border border-neutral-600 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none transition-shadow duration-150"
             placeholder="Ask anything about my resume"
-            disabled={isLoading}
+            disabled={isLoading || isStreaming}
           />
           <button
             className="cursor-pointer
@@ -193,9 +250,9 @@ export default function Home() {
                        transition-all duration-150 ease-in-out
                        disabled:opacity-70 disabled:cursor-not-allowed"
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || isStreaming}
           >
-            {isLoading ? "..." : "Send"}
+            {(isLoading || isStreaming) ? "..." : "Send"}
           </button>
         </form>
       </div>
