@@ -93,11 +93,7 @@ Question: ${question}`;
                     role: "user",
                     content: userMessage
                 }
-            ],
-            parameters: {
-                max_new_tokens: 512, 
-                temperature: 0.7,    
-            }
+            ]
         });
         
         if (response.choices && Array.isArray(response.choices) && response.choices.length > 0 && 
@@ -148,19 +144,19 @@ Question: ${question}`;
                     content: userMessage
                 }
             ],
-            stream: true,
-            parameters: {
-                max_new_tokens: 512, 
-                temperature: 0.7,
-            }
+            stream: true
         });
         
 
         for await (const r of stream) {
             // yield the generated token
             const encoder = new TextEncoder();
-            const chunk = encoder.encode(`data: ${r.choices[0].delta.content}\n\n`);
-            controller.enqueue(chunk)
+            const content = r.choices[0].delta.content;
+            if (content) {
+                // console.log("content", content)
+                const chunk = encoder.encode(`data: ${r.choices[0].delta.content}\n\n`);
+                controller.enqueue(chunk)
+            }
         }
 
     } catch (error) {
