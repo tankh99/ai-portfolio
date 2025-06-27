@@ -136,7 +136,7 @@ Question: ${question}`;
     try {
         // const client = new InferenceClient(process.env.HUGGINGFACE_ACCESS_TOKEN)
         const {textStream} = await streamText({
-            model: openrouter('openai/gpt-4o-mini'),
+            model: openrouter('deepseek/deepseek-chat-v3-0324:free'),
             system: systemPrompt,
             prompt: userMessage
       });
