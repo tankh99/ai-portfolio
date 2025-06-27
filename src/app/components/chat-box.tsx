@@ -1,4 +1,3 @@
-
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Message } from "../page";
@@ -64,18 +63,13 @@ export default function ChatBox(props: P) {
                                                     {children}
                                                 </blockquote>
                                             ),
-                                            p: ({ children }) => (
-                                                <p className="whitespace-pre-line">
-                                                    {children}
-                                                </p>
-                                            ),
                                             ul: ({ children }) => (
                                                 <ul className="list-disc list-inside my-2 space-y-1">
                                                     {children}
                                                 </ul>
                                             ),
                                             ol: ({ children }) => (
-                                                <ol className="list-decimal list-inside my-2 space-y-1">
+                                                <ol className="list-decimal pl-2">
                                                     {children}
                                                 </ol>
                                             ),
@@ -86,7 +80,7 @@ export default function ChatBox(props: P) {
                                             ),
                                         }}
                                     >
-                                        {msg.text.replace(/\n/g, '\n')}
+                                        {msg.text}
                                     </ReactMarkdown>
                                 </div>
                             )}

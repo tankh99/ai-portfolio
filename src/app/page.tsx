@@ -23,8 +23,8 @@ export default function Home() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
-      "sender": "bot",
-      "text": "Hello! I'm Khang Hou's AI assistant. Ask me anything about his resume, projects or even hobbies!",
+      sender: "bot",
+      text: "Hello! I'm Khang Hou's AI assistant. Ask me anything about his resume, projects or even hobbies!",
     }
   ]);
   const [isLoading, setIsLoading] = useState(false);
@@ -68,7 +68,7 @@ export default function Home() {
         setIsStreaming(true);
         const reader = response.body?.getReader();
         const decoder = new TextDecoder();
-        
+
         if (!reader) {
           throw new Error("No response body reader available");
         }
@@ -77,36 +77,36 @@ export default function Home() {
         const botMessageId = (Date.now() + 1).toString();
         setMessages(prevMessages => [...prevMessages, { id: botMessageId, text: "", sender: 'bot' }]);
 
-        let accumulatedText = "";
-        
+        let buffer = "";
+
         try {
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
-            
+
             const chunk = decoder.decode(value);
-            const lines = chunk.split('\n');
-            
+            // const lines = chunk.split('\n');
+            // Splitting by \t\t becuase markdown uses \n\n and \n 
+            const lines = chunk.split('\t\t')
             for (const line of lines) {
-              if (line.startsWith('data: ')) {
-                try {
-                  const data = (line.slice(6));
-                  
-                  accumulatedText += data;
-                  // Update the bot message with accumulated text
-                  setMessages(prevMessages => 
-                    prevMessages.map(msg => 
-                      msg.id === botMessageId 
-                        ? { ...msg, text: accumulatedText }
-                        : msg
-                    )
-                  );
-                } catch (parseError) {
-                  console.warn('Failed to parse streaming data:', parseError);
-                }
+              try {
+                const data = line.slice(6)
+                buffer += data;
+                
+                setMessages(prevMessages =>
+                  prevMessages.map(msg =>
+                    msg.id === botMessageId
+                      ? { ...msg, text: buffer }
+                      : msg
+                  )
+                );
+              } catch (parseError) {
+                console.warn('Failed to parse streaming data:', parseError);
               }
             }
+
           }
+
         } finally {
           reader.releaseLock();
           setIsStreaming(false);
@@ -130,13 +130,13 @@ export default function Home() {
 
   return (
     <div className="flex flex-col h-screen font-[family-name:var(--font-geist-sans)] bg-gradient-to-br from-neutral-900 via-neutral-800 to-black text-neutral-100">
-      <Navbar 
-        name="Khang Hou" 
+      <Navbar
+        name="Khang Hou"
         githubUrl="https://github.com/tankh99"
         linkedinUrl="https://linkedin.com/in/khanghou"
         resumeUrl="/resume.pdf" // Assuming resume is in public folder
       />
-      <ChatBox 
+      <ChatBox
         messages={messages}
         isLoading={isLoading}
         isStreaming={isStreaming}
@@ -145,7 +145,7 @@ export default function Home() {
         setInputValue={setInputValue}
         error={error}
         setError={setError}
-         />
+      />
     </div>
   );
 }

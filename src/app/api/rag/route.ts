@@ -1,6 +1,8 @@
 import {Pinecone} from "@pinecone-database/pinecone"
 import {InferenceClient} from '@huggingface/inference'
 import { NextResponse } from "next/server";
+import { openrouter } from "@openrouter/ai-sdk-provider";
+import { generateText, streamText } from "ai";
 
 if (!process.env.PINECONE_API_KEY) {
     throw new Error("PINECONE_API_KEY is not set");
@@ -122,7 +124,7 @@ async function generateStreamingAnswer(question: string, context: string, contro
     
     For example, if the user asks for Khang Hou's resume and projects, he/she may be a recruiter and may be interested in knowing more of my skills, experiences and projects.`;
     
-    const userMessage = `Based on the following context, please answer the question.
+    const userMessage = `Based on the following context, please answer the question and format it in markdown.
 
 Context:
 ---
@@ -132,33 +134,19 @@ ${context}
 Question: ${question}`;
 
     try {
-        const client = new InferenceClient(process.env.HUGGINGFACE_ACCESS_TOKEN)
-        const stream = client.chatCompletionStream({
-            model: "meta-llama/Llama-3.1-8B-Instruct",
-            provider: "auto",
-            messages: [
-                {
-                    role: "system",
-                    content: systemPrompt
-                },
-                {
-                    role: "user",
-                    content: userMessage
-                }
-            ],
-            stream: true
-        });
-        
-
-        for await (const r of stream) {
+        // const client = new InferenceClient(process.env.HUGGINGFACE_ACCESS_TOKEN)
+        const {textStream} = await streamText({
+            model: openrouter('openai/gpt-4o-mini'),
+            system: systemPrompt,
+            prompt: userMessage
+      });
+      
+        for await (const r of textStream) {
             // yield the generated token
+
             const encoder = new TextEncoder();
-            const content = r.choices[0].delta.content;
-            if (content) {
-                // console.log("content", content)
-                const chunk = encoder.encode(`data: ${r.choices[0].delta.content}\n\n`);
-                controller.enqueue(chunk)
-            }
+            const chunk = encoder.encode(`data: ${r}\t\t`)
+            controller.enqueue(chunk);
         }
 
     } catch (error) {
