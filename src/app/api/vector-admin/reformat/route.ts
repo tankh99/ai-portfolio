@@ -12,8 +12,7 @@ export async function POST(req: NextRequest) {
     const response = await generateText({
       model: openrouter('openai/gpt-4o-mini'),
       system: 'You are a helpful assistant that reformats user-provided project or experience details into a single, concise, resume-style bullet point. Use professional language and focus on impact and results.',
-      prompt: raw,
-      maxTokens: 128,
+      prompt: raw
 });
 
     if (!response.text) {
