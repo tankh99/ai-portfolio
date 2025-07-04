@@ -1,7 +1,7 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Message } from "../page";
 import { Ref, useEffect, useRef } from "react";
+import { Message } from "../types";
 
 
 type P = {

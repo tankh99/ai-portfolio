@@ -1,22 +1,9 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from "react"; // Added React and useRef
+import React, { useState } from "react"; // Added React and useRef
 import Navbar from "../components/Navbar"; // Import the Navbar component
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import type { Components } from 'react-markdown';
 import ChatBox from "./components/chat-box";
-
-export type Message = {
-  id: string;
-  text: string;
-  sender: 'user' | 'bot';
-}
-
-export type CodeProps = {
-  inline?: boolean;
-  children: React.ReactNode;
-}
+import { Message } from "./types";
 
 export default function Home() {
   const [inputValue, setInputValue] = useState(""); // For the controlled input
@@ -109,7 +96,6 @@ export default function Home() {
 
         } finally {
           reader.releaseLock();
-          setIsStreaming(false);
         }
       } else {
         // Handle regular JSON response
