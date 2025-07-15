@@ -1,6 +1,6 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Ref, useEffect, useRef } from "react";
+import { Ref, useEffect, useRef, useState } from "react";
 import { Message } from "../types";
 import { FormTextInput } from "./form/form-text-input";
 import { Form } from "@/components/ui/form";
@@ -24,19 +24,34 @@ type P = {
 export default function ChatBox(props: P) {
 
     const {messages, handleSubmit, handleStop, isLoading, isStreaming, form} = props
-
-    const messagesEndRef = useRef<null | HTMLDivElement>(null); // For auto-scrolling
+    const [isAtBottom, setIsAtBottom] = useState(true)
+    const messagesEndRef = useRef<HTMLDivElement>(null); // For auto-scrolling
+    const containerRef = useRef<HTMLDivElement>(null)
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
-    useEffect(scrollToBottom, [messages]); // Scroll when messages change
+    const handleScroll = () => {
+        if (!containerRef.current) return;
+        const {scrollTop, scrollHeight, clientHeight} = containerRef.current;
+        setIsAtBottom(scrollHeight - scrollTop - clientHeight < 30);
+    }
+
+    useEffect(() => {
+        if (isAtBottom && messagesEndRef.current) {
+            scrollToBottom()
+        }
+    }, [messages, isAtBottom])
+
     return (
 
         <div className="flex flex-col flex-grow overflow-hidden p-4">
             {/* Chat messages area */}
-            <div className="flex-grow overflow-y-auto mb-4 space-y-4 p-2 rounded-lg bg-neutral-800/30 border border-neutral-700">
+            <div 
+                ref={containerRef}
+                onScroll={handleScroll}
+                className="flex-grow overflow-y-auto mb-4 space-y-4 p-2 rounded-lg bg-neutral-800/30 border border-neutral-700">
                 {messages.map((msg) => (
                     <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                         <div
