@@ -10,7 +10,7 @@ import { Send, Square, StopCircleIcon, Upload } from "lucide-react";
 
 type P = {
     messages: Message[]
-    handleSubmit: (e: React.FormEvent<HTMLFormElement>) => void
+    handleSubmit: any,
     handleStop: () => void
     // inputValue: string
     // setInputValue: (x: string) => void

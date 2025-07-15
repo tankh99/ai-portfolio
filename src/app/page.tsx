@@ -15,7 +15,7 @@ export type ChatFormValues = z.infer<typeof chatFormSchema>
 
 export default function Home() {
   const [inputValue, setInputValue] = useState(""); // For the controlled input
-  const [abortController, setAbortcontroller] = useState<AbortController | null>(null);
+  const [abortController, setAbortController] = useState<AbortController | null>(null);
 
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -45,14 +45,15 @@ export default function Home() {
       return;
     }
 
+    const userMessage: Message = { id: Date.now().toString(), text: userQuestion, sender: 'user' }
     // Add user's question to messages
-    setMessages(prevMessages => [...prevMessages, { id: Date.now().toString(), text: userQuestion, sender: 'user' }]);
+    setMessages(prevMessages => [...prevMessages, userMessage]);
     setInputValue(""); // Clear input field
     setIsLoading(true);
     setError("");
 
     const controller = new AbortController();
-    setAbortcontroller(controller);
+    setAbortController(controller);
 
     try {
       // Try streaming first, fallback to regular if not supported
@@ -61,7 +62,10 @@ export default function Home() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ question: userQuestion, stream: true }),
+        body: JSON.stringify({ messages: [
+          ...messages,
+          userMessage
+        ], stream: true }),
         signal: controller.signal
       });
 
@@ -140,7 +144,7 @@ export default function Home() {
   const handleStop = () => {
     if (abortController) {
       abortController.abort("User cancelled action");
-      setAbortcontroller(null);
+      setAbortController(null);
       setIsStreaming(false);
       setIsLoading(false);
     }

@@ -3,6 +3,7 @@ import {InferenceClient} from '@huggingface/inference'
 import { NextResponse } from "next/server";
 import { openrouter } from "@openrouter/ai-sdk-provider";
 import { generateText, streamText } from "ai";
+import { Message } from "@/app/types";
 
 if (!process.env.PINECONE_API_KEY) {
     throw new Error("PINECONE_API_KEY is not set");
@@ -63,6 +64,7 @@ Question: ${question}`;
     return '_default_';
 }
 
+// TODO: remove this
 async function generateAnswer(question: string, context: string) {
     const systemPrompt = `
     You are Khang Hou's helpful and highly skilled AI assistant, specializing in his resume and portfolio. 
@@ -121,6 +123,8 @@ async function generateStreamingAnswer(question: string, context: string, contro
     If the answer is not found in the context, clearly state that the information is not available in the provided documents. 
     
     Be concise and conversational and also provide follow-up suggestions on other topics that may interest the user's needs. 
+
+    Output only valid markdown WITHOUT backticks
     
     For example, if the user asks for Khang Hou's resume and projects, he/she may be a recruiter and may be interested in knowing more of my skills, experiences and projects.`;
     
@@ -159,14 +163,20 @@ Question: ${question}`;
     }
 }
 
+type ChatRequest = {
+    messages: Message[],
+    stream: boolean
+}
+
 export async function POST(request: Request) {
     try {
-        const {question, stream: shouldStream = false} = await request.json();
+        const {messages, stream: shouldStream = false}: ChatRequest = await request.json();
 
-        if (!question || typeof question !== 'string') {
-            return NextResponse.json({ error: 'Question is required and must be a string.' }, { status: 400 });
+        if (!messages) {
+            return NextResponse.json({ error: 'Messages are required.' }, { status: 400 });
         }
 
+        const question = messages[messages.length - 1]
         const index = pinecone.index(PINECONE_INDEX_NAME);
         // const namespace = await getRoutedNamespace(question);
         const namespace = PINECONE_NAMESPACE
@@ -174,7 +184,7 @@ export async function POST(request: Request) {
         const queryResponse = await index.namespace(namespace).searchRecords({
             query: {
                 inputs: {
-                    text: question, 
+                    text: question.text, 
                 },
                 topK: 4
             }
@@ -186,10 +196,14 @@ export async function POST(request: Request) {
             .join("\n---\n"); // Join context snippets clearly
 
         // Check if streaming is requested
+        // const formattedMessages = 
+        const formattedPrompt = messages.reduce((acc, message) => {
+            return acc + `${message.sender}: ${message.text}`
+        }, "")
         if (shouldStream) {
             const stream = new ReadableStream({
                 start(controller) {
-                    generateStreamingAnswer(question, context, controller);
+                    generateStreamingAnswer(formattedPrompt, context, controller);
                 }
             });
 
@@ -202,7 +216,7 @@ export async function POST(request: Request) {
             });
         } else {
             // Regular non-streaming response
-            const answer = await generateAnswer(question, context);
+            const answer = await generateAnswer(formattedPrompt, context);
             return NextResponse.json({answer: answer})
         }
     } catch (error: any) {
