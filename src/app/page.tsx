@@ -4,6 +4,14 @@ import React, { useState } from "react"; // Added React and useRef
 import Navbar from "../components/Navbar"; // Import the Navbar component
 import ChatBox from "./components/chat-box";
 import { Message } from "./types";
+import { useForm } from "react-hook-form";
+import {z} from 'zod'
+import {zodResolver} from '@hookform/resolvers/zod'
+const chatFormSchema = z.object({
+  question: z.string()
+})
+
+export type ChatFormValues = z.infer<typeof chatFormSchema>
 
 export default function Home() {
   const [inputValue, setInputValue] = useState(""); // For the controlled input
@@ -17,6 +25,13 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
+  const form = useForm<ChatFormValues>({
+    resolver: zodResolver(chatFormSchema),
+    mode: "onChange",
+    defaultValues: {
+      question: ""
+    }
+  })
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -59,7 +74,7 @@ export default function Home() {
         if (!reader) {
           throw new Error("No response body reader available");
         }
-
+        
         // Add initial bot message
         const botMessageId = (Date.now() + 1).toString();
         setMessages(prevMessages => [...prevMessages, { id: botMessageId, text: "", sender: 'bot' }]);
@@ -114,6 +129,7 @@ export default function Home() {
     }
   };
 
+Object.keys(form.formState.errors).length
   return (
     <div className="flex flex-col h-screen font-[family-name:var(--font-geist-sans)] bg-gradient-to-br from-neutral-900 via-neutral-800 to-black text-neutral-100">
       <Navbar
@@ -127,10 +143,7 @@ export default function Home() {
         isLoading={isLoading}
         isStreaming={isStreaming}
         handleSubmit={handleSubmit}
-        inputValue={inputValue}
-        setInputValue={setInputValue}
-        error={error}
-        setError={setError}
+        form={form}
       />
     </div>
   );
