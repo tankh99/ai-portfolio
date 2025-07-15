@@ -5,11 +5,13 @@ import { Message } from "../types";
 import { FormTextInput } from "./form/form-text-input";
 import { Form } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
+import { Send, Square, StopCircleIcon, Upload } from "lucide-react";
 
 
 type P = {
     messages: Message[]
     handleSubmit: (e: React.FormEvent<HTMLFormElement>) => void
+    handleStop: () => void
     // inputValue: string
     // setInputValue: (x: string) => void
     isLoading: boolean
@@ -21,7 +23,7 @@ type P = {
 
 export default function ChatBox(props: P) {
 
-    const {messages, handleSubmit, isLoading, isStreaming, form} = props
+    const {messages, handleSubmit, handleStop, isLoading, isStreaming, form} = props
 
     const messagesEndRef = useRef<null | HTMLDivElement>(null); // For auto-scrolling
 
@@ -110,7 +112,7 @@ export default function ChatBox(props: P) {
 
             {/* Input form */}
             <Form {...form}>
-                <form onSubmit={handleSubmit} className="w-full my-2 flex items-center justify-center gap-x-2 self-center sticky bottom-4">
+                <form onSubmit={form.handleSubmit(handleSubmit)} className="w-full my-2 flex items-center justify-center gap-x-2 self-center sticky bottom-4">
                     <FormTextInput
                         name="question"
                         multiline
@@ -136,21 +138,39 @@ export default function ChatBox(props: P) {
                         placeholder="Ask anything about my resume"
                         disabled={isLoading || isStreaming}
                     /> */}
-                    <Button
-                        className="cursor-pointer
-                        bg-gradient-to-r from-sky-600 via-sky-500 to-sky-600
-                        text-white font-semibold
-                        py-3 px-6 rounded-lg shadow-md
-                        hover:from-sky-500 hover:via-sky-400 hover:to-sky-500
-                        active:from-sky-700 active:via-sky-600 active:to-sky-700
-                        focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black focus:ring-white
-                        transition-all duration-150 ease-in-out
-                        disabled:opacity-70 disabled:cursor-not-allowed"
-                        type="submit"
-                        disabled={isLoading || isStreaming}
-                    >
-                        {(isLoading || isStreaming) ? "..." : "Send"}
-                    </Button>
+                    {(isLoading || isStreaming)
+                        ? <button
+                            onClick={handleStop}
+                            className="bg-white cursor-pointer
+                            rounded-full font-semibold
+                            
+                            p-3 shadow-md
+                            focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black focus:ring-white
+                            transition-all duration-150 ease-in-out
+                            hover:opacity-70
+                            disabled:opacity-70 disabled:cursor-not-allowed">
+                                {/* <StopCircleIcon/> */}
+                                <Square 
+                                    size={14}
+                                    stroke={`black `}
+                                    className={`fill-black`} />
+                            </button>
+                        : <Button
+                            className="cursor-pointer
+                            bg-gradient-to-r from-sky-600 via-sky-500 to-sky-600
+                            text-white font-semibold
+                            py-3 px-6 rounded-lg shadow-md
+                            hover:from-sky-500 hover:via-sky-400 hover:to-sky-500
+                            active:from-sky-700 active:via-sky-600 active:to-sky-700
+                            focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black focus:ring-white
+                            transition-all duration-150 ease-in-out
+                            disabled:opacity-70 disabled:cursor-not-allowed"
+                            type="submit"
+                            disabled={isLoading || isStreaming}
+                        >
+                            <Send />
+                        </Button>
+                    }
                 </form>
             </Form>
         </div>

@@ -15,6 +15,8 @@ export type ChatFormValues = z.infer<typeof chatFormSchema>
 
 export default function Home() {
   const [inputValue, setInputValue] = useState(""); // For the controlled input
+  const [abortController, setAbortcontroller] = useState<AbortController | null>(null);
+
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
@@ -33,10 +35,11 @@ export default function Home() {
     }
   })
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const userQuestion = inputValue.trim();
 
+  const handleSubmit = async (values: ChatFormValues) => {
+    const userQuestion = values.question
+
+    form.reset()
     if (!userQuestion) {
       setError("Please enter a question.");
       return;
@@ -48,6 +51,9 @@ export default function Home() {
     setIsLoading(true);
     setError("");
 
+    const controller = new AbortController();
+    setAbortcontroller(controller);
+
     try {
       // Try streaming first, fallback to regular if not supported
       const response = await fetch('/api/rag', {
@@ -56,6 +62,7 @@ export default function Home() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ question: userQuestion, stream: true }),
+        signal: controller.signal
       });
 
       if (!response.ok) {
@@ -74,7 +81,7 @@ export default function Home() {
         if (!reader) {
           throw new Error("No response body reader available");
         }
-        
+
         // Add initial bot message
         const botMessageId = (Date.now() + 1).toString();
         setMessages(prevMessages => [...prevMessages, { id: botMessageId, text: "", sender: 'bot' }]);
@@ -120,16 +127,25 @@ export default function Home() {
 
     } catch (err: any) {
       console.error("RAG Error:", err);
-      setError(err.message || "Failed to get an answer.");
+      const errMsg = err.message != null ? err.message : err != null ? err : "Failed to get an answer."
+      setError(errMsg);
       // Optionally add error as a bot message
-      setMessages(prevMessages => [...prevMessages, { id: (Date.now() + 1).toString(), text: `Error: ${err.message || "Failed to get an answer."}`, sender: 'bot' }]);
+      setMessages(prevMessages => [...prevMessages, { id: (Date.now() + 1).toString(), text: `Error: ${errMsg}`, sender: 'bot' }]);
     } finally {
       setIsLoading(false);
       setIsStreaming(false);
     }
   };
 
-Object.keys(form.formState.errors).length
+  const handleStop = () => {
+    if (abortController) {
+      abortController.abort("User cancelled action");
+      setAbortcontroller(null);
+      setIsStreaming(false);
+      setIsLoading(false);
+    }
+  }
+
   return (
     <div className="flex flex-col h-screen font-[family-name:var(--font-geist-sans)] bg-gradient-to-br from-neutral-900 via-neutral-800 to-black text-neutral-100">
       <Navbar
@@ -143,6 +159,7 @@ Object.keys(form.formState.errors).length
         isLoading={isLoading}
         isStreaming={isStreaming}
         handleSubmit={handleSubmit}
+        handleStop={handleStop}
         form={form}
       />
     </div>
