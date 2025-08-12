@@ -55,7 +55,7 @@ export default function ChatBox(props: P) {
                 {messages.map((msg) => (
                     <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                         <div
-                            className={`max-w-xs lg:max-w-md px-4 py-2 rounded-xl shadow ${msg.sender === 'user'
+                            className={`max-w-lg lg:max-w-md px-4 py-2 rounded-xl shadow ${msg.sender === 'user'
                                     ? 'bg-sky-600 text-white'
                                     : 'bg-neutral-700 text-neutral-100'
                                 }`}
@@ -108,7 +108,7 @@ export default function ChatBox(props: P) {
                 ))}
                 {(isLoading || isStreaming) && (
                     <div className="flex justify-start">
-                        <div className="max-w-xs lg:max-w-md px-4 py-2 rounded-xl shadow bg-neutral-700 text-neutral-100">
+                        <div className="max-w-md lg:max-w-md px-4 py-2 rounded-xl shadow bg-neutral-700 text-neutral-100">
                             <p className="animate-pulse">
                                 {isStreaming ? "Streaming..." : "Thinking..."}
                             </p>

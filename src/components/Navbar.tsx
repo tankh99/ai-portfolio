@@ -1,4 +1,5 @@
 import React from 'react';
+import { logCTAClick } from '../lib/useCTAClickTracker';
 
 interface NavbarProps {
   name: string;
@@ -13,13 +14,31 @@ const Navbar: React.FC<NavbarProps> = ({ name, githubUrl, linkedinUrl, resumeUrl
       <div className="container mx-auto flex justify-between items-center">
         <div className="text-xl font-semibold">{name}</div>
         <div className="space-x-4">
-          <a href={githubUrl} target="_blank" rel="noopener noreferrer" className="hover:text-sky-400 transition-colors">
+          <a
+            href={githubUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-sky-400 transition-colors"
+            onClick={() => logCTAClick('github')}
+          >
             GitHub
           </a>
-          <a href={linkedinUrl} target="_blank" rel="noopener noreferrer" className="hover:text-sky-400 transition-colors">
+          <a
+            href={linkedinUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-sky-400 transition-colors"
+            onClick={() => logCTAClick('linkedin')}
+          >
             LinkedIn
           </a>
-          <a href={resumeUrl} target="_blank" rel="noopener noreferrer" className="hover:text-sky-400 transition-colors">
+          <a
+            href={resumeUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-sky-400 transition-colors"
+            onClick={() => logCTAClick('resume')}
+          >
             Resume
           </a>
         </div>

@@ -1,72 +1,55 @@
 'use client'
 
-import React, { useState } from "react"; // Added React and useRef
-import Navbar from "../components/Navbar"; // Import the Navbar component
-import ChatBox from "./components/chat-box";
-import { Message } from "./types";
-import { useForm } from "react-hook-form";
-import {z} from 'zod'
-import {zodResolver} from '@hookform/resolvers/zod'
-const chatFormSchema = z.object({
-  question: z.string()
-})
+import ChatBox from '@/components/chat-box'
+import Navbar from '@/components/navbar'
+import { getSessionId } from '@/lib/session';
+import { logChatMessage } from '@/lib/useChatMessageTracker';
+import { usePageViewTracker } from '@/lib/usePageViewTracker';
+import { ChatMessage } from '@/types';
+import { error } from 'console'
+import React, { useState } from 'react'
 
-export type ChatFormValues = z.infer<typeof chatFormSchema>
+export default function ResumePage() {
 
-export default function Home() {
   const [inputValue, setInputValue] = useState(""); // For the controlled input
-  const [abortController, setAbortController] = useState<AbortController | null>(null);
-
-  const [messages, setMessages] = useState<Message[]>([
+  const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: "1",
       sender: "bot",
       text: "Hello! I'm Khang Hou's AI assistant. Ask me anything about his resume, projects or even hobbies!",
     }
   ]);
+
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
-  const form = useForm<ChatFormValues>({
-    resolver: zodResolver(chatFormSchema),
-    mode: "onChange",
-    defaultValues: {
-      question: ""
-    }
-  })
+  const userId = "777439a1-8c40-44d6-89c3-8c08d28eb470"
+  
+  usePageViewTracker(userId);
 
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const userQuestion = inputValue.trim();
 
-  const handleSubmit = async (values: ChatFormValues) => {
-    const userQuestion = values.question
-
-    form.reset()
     if (!userQuestion) {
       setError("Please enter a question.");
       return;
     }
 
-    const userMessage: Message = { id: Date.now().toString(), text: userQuestion, sender: 'user' }
     // Add user's question to messages
-    setMessages(prevMessages => [...prevMessages, userMessage]);
+    setMessages(prevMessages => [...prevMessages, { id: Date.now().toString(), text: userQuestion, sender: 'user' }]);
     setInputValue(""); // Clear input field
     setIsLoading(true);
     setError("");
 
-    const controller = new AbortController();
-    setAbortController(controller);
-
     try {
-      // Try streaming first, fallback to regular if not supported
+      
       const response = await fetch('/api/rag', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ messages: [
-          ...messages,
-          userMessage
-        ], stream: true }),
-        signal: controller.signal
+        body: JSON.stringify({ question: userQuestion }),
       });
 
       if (!response.ok) {
@@ -101,8 +84,10 @@ export default function Home() {
             // const lines = chunk.split('\n');
             // Splitting by \t\t becuase markdown uses \n\n and \n 
             const lines = chunk.split('\t\t')
+            
             for (const line of lines) {
               try {
+
                 const data = line.slice(6)
                 buffer += data;
                 
@@ -123,33 +108,50 @@ export default function Home() {
         } finally {
           reader.releaseLock();
         }
+        // Log bot message after streaming
+        logChatMessage({
+          prompt: userQuestion,
+          user_id: userId,
+          session_id: getSessionId(),
+          response: buffer,
+          is_confident: true, // You may want to add logic to determine confidence level of how confident the AI has answered the query
+          timestamp: new Date().toISOString(),
+        });
       } else {
+        console.log("EY YO?")
         // Handle regular JSON response
         const data = await response.json();
         setMessages(prevMessages => [...prevMessages, { id: (Date.now() + 1).toString(), text: data.answer, sender: 'bot' }]);
+        // Log bot message
+        logChatMessage({
+          prompt: userQuestion,
+          user_id: userId,
+          session_id: getSessionId(),
+          response: data.answer,
+          is_confident: true, // You may want to add logic to determine confidence
+          timestamp: new Date().toISOString(),
+        });
       }
 
     } catch (err: any) {
       console.error("RAG Error:", err);
-      const errMsg = err.message != null ? err.message : err != null ? err : "Failed to get an answer."
-      setError(errMsg);
+      setError(err.message || "Failed to get an answer.");
       // Optionally add error as a bot message
-      setMessages(prevMessages => [...prevMessages, { id: (Date.now() + 1).toString(), text: `Error: ${errMsg}`, sender: 'bot' }]);
+      setMessages(prevMessages => [...prevMessages, { id: (Date.now() + 1).toString(), text: `Error: ${err.message || "Failed to get an answer."}`, sender: 'bot' }]);
+      // Log bot error message
+      logChatMessage({
+        prompt: userQuestion,
+        user_id: userId,
+        session_id: getSessionId(),
+        response: err.message,
+        is_confident: false, // You may want to add logic to determine confidence
+        timestamp: new Date().toISOString(),
+      });
     } finally {
       setIsLoading(false);
       setIsStreaming(false);
     }
   };
-
-  const handleStop = () => {
-    if (abortController) {
-      abortController.abort("User cancelled action");
-      setAbortController(null);
-      setIsStreaming(false);
-      setIsLoading(false);
-    }
-  }
-
   return (
     <div className="flex flex-col h-screen font-[family-name:var(--font-geist-sans)] bg-gradient-to-br from-neutral-900 via-neutral-800 to-black text-neutral-100">
       <Navbar
@@ -163,9 +165,11 @@ export default function Home() {
         isLoading={isLoading}
         isStreaming={isStreaming}
         handleSubmit={handleSubmit}
-        handleStop={handleStop}
-        form={form}
+        inputValue={inputValue}
+        setInputValue={setInputValue}
+        error={error}
+        setError={setError}
       />
     </div>
-  );
+  )
 }
