@@ -1,5 +1,5 @@
 import React from 'react';
-import { logCTAClick } from '../lib/useCTAClickTracker';
+import { logCTAClick } from '../../lib/useCTAClickTracker';
 
 interface NavbarProps {
   name: string;

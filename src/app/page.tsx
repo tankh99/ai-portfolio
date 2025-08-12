@@ -1,7 +1,7 @@
 'use client'
 
-import ChatBox from '@/components/chat-box'
-import Navbar from '@/components/navbar'
+import ChatBox from '@/app/components/chat-box'
+import Navbar from '@/app/components/navbar'
 import { getSessionId } from '@/lib/session';
 import { logChatMessage } from '@/lib/useChatMessageTracker';
 import { usePageViewTracker } from '@/lib/usePageViewTracker';
